@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tonga Super App</title>
+    <title>Tongka Super App</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font: Inter -->
@@ -19,21 +19,23 @@
         .blinking-icon {
             animation: blink 1.5s infinite;
         }
+        /* Progress circle for hold-to-confirm */
+        .progress-ring__circle {
+            transition: stroke-dashoffset 0.35s;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
     </style>
-    <!-- App Favicon for all browsers -->
+    <!-- App Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect x='2' y='5' width='20' height='14' rx='3' stroke='currentColor' stroke-width='2' fill='none'/><path d='M7 12h2m4 0h5M12 8v8' stroke='currentColor' stroke-width='2' stroke-linecap='round'/><text x='12' y='15' font-family='Arial' font-size='10' font-weight='bold' text-anchor='middle' fill='currentColor'>৳</text></svg>">
-    
     <!-- PWA Manifest for Android/Chrome -->
     <link rel="manifest" href="/manifest.json">
-    
     <!-- Apple iOS Meta Tags for "Add to Home Screen" -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Tonga App">
-    
+    <meta name="apple-mobile-web-app-title" content="Tongka App">
     <!-- Apple Touch Icon -->
     <link rel="apple-touch-icon" href="https://placehold.co/180x180/007bff/ffffff?text=TA">
-
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen flex flex-col items-center justify-center p-4 md:p-8">
 
@@ -47,7 +49,7 @@
                 <path d="M7 12h2m4 0h5M12 8v8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                 <text x="12" y="15" font-family="Arial" font-size="10" font-weight="bold" text-anchor="middle" fill="currentColor">৳</text>
             </svg>
-            <h1 class="text-3xl font-bold text-blue-600 dark:text-blue-400">Tonga Super App</h1>
+            <h1 class="text-3xl font-bold text-blue-600 dark:text-blue-400">Tongka Super App</h1>
         </div>
 
         <!-- Login/Signup Form (Initially visible) -->
@@ -56,6 +58,19 @@
                 <h2 id="auth-title" class="text-2xl font-semibold mb-4 text-center">Sign Up</h2>
                 <input id="auth-email" type="email" placeholder="Email" class="w-full p-3 mb-3 rounded-lg border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-900 transition-all duration-300">
                 <input id="auth-password" type="password" placeholder="Password" class="w-full p-3 mb-3 rounded-lg border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-900 transition-all duration-300">
+                
+                <!-- Role Selection -->
+                <div id="role-selection" class="flex justify-center space-x-4 mb-4">
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="user-role" value="customer" class="form-radio text-blue-600" checked>
+                        <span class="ml-2 text-sm">Customer</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="user-role" value="shop_owner" class="form-radio text-blue-600">
+                        <span class="ml-2 text-sm">Shop Owner</span>
+                    </label>
+                </div>
+
                 <div id="error-message" class="text-red-500 text-sm mb-2 hidden"></div>
                 <button id="auth-btn" class="w-full bg-blue-500 text-white p-3 rounded-lg font-semibold hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300">
                     Sign Up
@@ -68,7 +83,7 @@
         
         <!-- App Content (Hidden until logged in) -->
         <div id="app-content" class="flex flex-col md:flex-row flex-grow gap-6 hidden">
-            <!-- Chat Section -->
+            <!-- Left Side: Chat Section -->
             <div class="flex flex-col flex-1">
                 <h2 class="text-xl font-semibold mb-2 text-center text-gray-800 dark:text-gray-200">Chat</h2>
                 <div id="messages" class="flex-grow overflow-y-auto mb-4 border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-4 bg-gray-50 dark:bg-gray-700">
@@ -82,29 +97,65 @@
                 </form>
             </div>
 
-            <!-- Transaction Logbook Section -->
+            <!-- Right Side: Transaction Section -->
             <div class="flex flex-col flex-1 mt-6 md:mt-0">
-                <h2 class="text-xl font-semibold mb-2 text-center text-gray-800 dark:text-gray-200">Transaction Log</h2>
-                <div class="mb-4 border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-700">
-                    <div class="mb-2">
-                        <label for="recipient-name" class="block text-sm font-medium mb-1">Recipient/Sender Name</label>
-                        <input type="text" id="recipient-name" placeholder="Name" class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-900 transition-all duration-300">
+                <div id="customer-ui" class="hidden h-full flex flex-col">
+                    <!-- Customer UI -->
+                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 w-full shadow-md mb-4 flex flex-col items-center">
+                        <div class="text-lg text-gray-500 dark:text-gray-400 mb-1">Your Tongka Balance</div>
+                        <div id="tongka-balance" class="text-5xl font-bold text-green-500 dark:text-green-400">0</div>
                     </div>
-                    <div class="mb-4">
-                        <label for="transaction-amount" class="block text-sm font-medium mb-1">Amount (TK)</label>
-                        <input type="number" id="transaction-amount" placeholder="0.00" class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-900 transition-all duration-300">
+
+                    <h2 class="text-xl font-semibold mb-2 text-center text-gray-800 dark:text-gray-200">Share Tongka</h2>
+                    <div class="mb-4 border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-700">
+                        <div class="mb-2">
+                            <label for="recipient-id" class="block text-sm font-medium mb-1">Recipient ID</label>
+                            <input type="text" id="recipient-id" placeholder="Enter Recipient's User ID" class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-900 transition-all duration-300">
+                        </div>
+                        <div class="mb-4">
+                            <label for="transaction-amount" class="block text-sm font-medium mb-1">Amount (TK)</label>
+                            <input type="number" id="transaction-amount" placeholder="0.00" class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-900 transition-all duration-300">
+                        </div>
+                        <!-- Hold-to-confirm button -->
+                        <div class="relative flex items-center justify-center">
+                            <div id="hold-button" class="w-40 h-40 rounded-full bg-blue-500 text-white flex items-center justify-center text-center font-bold text-lg cursor-pointer select-none transition-all duration-300 hover:bg-blue-600">
+                                <span id="hold-text">Hold to Share</span>
+                            </div>
+                            <svg id="hold-circle" class="absolute inset-0 w-full h-full" viewBox="0 0 120 120">
+                                <circle class="progress-ring__circle" stroke="#34D399" stroke-width="8" fill="transparent" r="56" cx="60" cy="60" stroke-dasharray="351.858" stroke-dashoffset="351.858" />
+                            </svg>
+                        </div>
+                        <div id="hold-message" class="mt-4 text-center text-sm text-gray-500 dark:text-gray-400 hidden"></div>
                     </div>
-                    <div class="flex justify-between space-x-2">
-                        <button id="btn-sent" class="flex-1 bg-red-500 text-white p-2 rounded-lg font-semibold hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 transition-all duration-300">
-                            Sent
-                        </button>
-                        <button id="btn-received" class="flex-1 bg-green-500 text-white p-2 rounded-lg font-semibold hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all duration-300">
-                            Received
-                        </button>
+                    
+                    <h2 class="text-xl font-semibold mb-2 text-center text-gray-800 dark:text-gray-200">Transaction Log</h2>
+                    <div id="transactions" class="flex-grow overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-2 bg-gray-50 dark:bg-gray-700">
+                        <!-- Transactions will be dynamically added here -->
                     </div>
                 </div>
-                <div id="transactions" class="flex-grow overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-2 bg-gray-50 dark:bg-gray-700">
-                    <!-- Transactions will be dynamically added here -->
+
+                <div id="shop-owner-ui" class="hidden h-full flex flex-col">
+                    <!-- Shop Owner UI -->
+                    <h2 class="text-xl font-semibold mb-2 text-center text-gray-800 dark:text-gray-200">Issue Tongka</h2>
+                    <div class="mb-4 border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-500 dark:bg-gray-700">
+                        <div class="mb-2">
+                            <label for="issue-recipient-id" class="block text-sm font-medium mb-1">Customer User ID</label>
+                            <input type="text" id="issue-recipient-id" placeholder="Enter Customer User ID" class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-900 transition-all duration-300">
+                        </div>
+                        <div class="mb-4">
+                            <label for="issue-amount" class="block text-sm font-medium mb-1">Amount (TK)</label>
+                            <input type="number" id="issue-amount" placeholder="0.00" class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-900 transition-all duration-300">
+                        </div>
+                        <button id="issue-tongka-btn" class="w-full bg-blue-500 text-white p-3 rounded-lg font-semibold hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300">
+                            Issue Tongka
+                        </button>
+                        <div id="issue-message" class="mt-2 text-center text-sm text-green-500 hidden"></div>
+                    </div>
+                    
+                    <h2 class="text-xl font-semibold mb-2 text-center text-gray-800 dark:text-gray-200">My Issued Log</h2>
+                    <div id="shop-owner-transactions" class="flex-grow overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-2 bg-gray-50 dark:bg-gray-700">
+                        <!-- Shop owner transactions will be dynamically added here -->
+                    </div>
                 </div>
             </div>
         </div>
@@ -121,7 +172,7 @@
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp, query, where } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp, query, where, doc, getDoc, setDoc, updateDoc, runTransaction } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
         import { getAuth, signInWithCustomToken, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js";
         
         // This is the firebaseConfig object you provided.
@@ -140,7 +191,8 @@
         const auth = getAuth(app);
         
         let userId = '';
-        
+        let currentUserRole = '';
+
         // UI Elements
         const authContainer = document.getElementById('auth-container');
         const appContent = document.getElementById('app-content');
@@ -153,7 +205,33 @@
         const userInfoContainer = document.getElementById('user-info');
         const logoutBtn = document.getElementById('logout-btn');
         const errorMessageDiv = document.getElementById('error-message');
+        const roleSelection = document.getElementById('role-selection');
+        const customerUI = document.getElementById('customer-ui');
+        const shopOwnerUI = document.getElementById('shop-owner-ui');
 
+        // Customer UI Elements
+        const tongkaBalance = document.getElementById('tongka-balance');
+        const recipientIdInput = document.getElementById('recipient-id');
+        const transactionAmountInput = document.getElementById('transaction-amount');
+        const transactionsContainer = document.getElementById('transactions');
+        const holdButton = document.getElementById('hold-button');
+        const holdText = document.getElementById('hold-text');
+        const holdCircle = document.getElementById('hold-circle');
+        const holdMessage = document.getElementById('hold-message');
+        const circleRadius = 56;
+        const circleCircumference = 2 * Math.PI * circleRadius;
+        holdCircle.querySelector('circle').style.strokeDasharray = `${circleCircumference} ${circleCircumference}`;
+        holdCircle.querySelector('circle').style.strokeDashoffset = circleCircumference;
+        let holdTimer;
+        const HOLD_DURATION = 1500; // 1.5 seconds
+
+        // Shop Owner UI Elements
+        const issueRecipientIdInput = document.getElementById('issue-recipient-id');
+        const issueAmountInput = document.getElementById('issue-amount');
+        const issueTongkaBtn = document.getElementById('issue-tongka-btn');
+        const issueMessage = document.getElementById('issue-message');
+        const shopOwnerTransactionsContainer = document.getElementById('shop-owner-transactions');
+        
         // State for auth form
         let isSigningUp = true;
 
@@ -161,6 +239,7 @@
         toggleAuthBtn.addEventListener('click', () => {
             isSigningUp = !isSigningUp;
             errorMessageDiv.classList.add('hidden'); // Hide error on toggle
+            roleSelection.classList.toggle('hidden', !isSigningUp);
             if (isSigningUp) {
                 authTitle.textContent = 'Sign Up';
                 authBtn.textContent = 'Sign Up';
@@ -193,7 +272,13 @@
 
             try {
                 if (isSigningUp) {
-                    await createUserWithEmailAndPassword(auth, email, password);
+                    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                    const selectedRole = document.querySelector('input[name="user-role"]:checked').value;
+                    const userRef = doc(db, `artifacts/${firebaseConfig.projectId}/users/${userCredential.user.uid}`);
+                    await setDoc(userRef, {
+                        role: selectedRole,
+                        balance: 0
+                    });
                 } else {
                     await signInWithEmailAndPassword(auth, email, password);
                 }
@@ -216,7 +301,24 @@
                 authContainer.classList.add('hidden');
                 appContent.classList.remove('hidden');
                 userInfoContainer.classList.remove('hidden');
+                
+                // Get user role from Firestore
+                const userRef = doc(db, `artifacts/${firebaseConfig.projectId}/users/${userId}`);
+                const userSnap = await getDoc(userRef);
 
+                if (userSnap.exists()) {
+                    currentUserRole = userSnap.data().role;
+                    if (currentUserRole === 'customer') {
+                        customerUI.classList.remove('hidden');
+                        shopOwnerUI.classList.add('hidden');
+                        setupCustomerUI(userSnap);
+                    } else if (currentUserRole === 'shop_owner') {
+                        shopOwnerUI.classList.remove('hidden');
+                        customerUI.classList.add('hidden');
+                        setupShopOwnerUI();
+                    }
+                }
+                
                 // --- Chat Section Logic ---
                 const messagesCol = collection(db, `artifacts/${firebaseConfig.projectId}/public/data/chat_messages`);
                 
@@ -273,89 +375,6 @@
                     }
                 });
 
-                // --- Transaction Logbook Section Logic ---
-                const transactionsCol = collection(db, `artifacts/${firebaseConfig.projectId}/users/${userId}/transaction_log`);
-                const recipientInput = document.getElementById('recipient-name');
-                const amountInput = document.getElementById('transaction-amount');
-                const transactionsContainer = document.getElementById('transactions');
-
-                // This path is now secure and private to the user
-                onSnapshot(query(transactionsCol), (snapshot) => {
-                    transactionsContainer.innerHTML = '';
-                    
-                    const transactions = snapshot.docs.map(doc => doc.data());
-                    transactions.sort((a, b) => (a.timestamp ? a.timestamp.toDate() : 0) - (b.timestamp ? b.timestamp.toDate() : 0));
-                    
-                    transactions.forEach(docData => {
-                        const transactionElement = document.createElement('div');
-                        transactionElement.classList.add('p-3', 'rounded-lg', 'shadow-sm', 'flex', 'flex-col', 'border', 'border-gray-200', 'dark:border-gray-600');
-                        
-                        let bgColor = 'bg-green-100 dark:bg-green-800';
-                        let textColor = 'text-green-800 dark:text-green-200';
-                        let sign = '+';
-
-                        if (docData.type === 'sent') {
-                            bgColor = 'bg-red-100 dark:bg-red-800';
-                            textColor = 'text-red-800 dark:text-red-200';
-                            sign = '-';
-                        }
-
-                        transactionElement.classList.add(bgColor);
-                        
-                        const nameElement = document.createElement('div');
-                        nameElement.classList.add('font-semibold', 'text-sm', textColor);
-                        nameElement.textContent = `${docData.type === 'sent' ? 'Sent to' : 'Received from'}: ${docData.recipient}`;
-                        
-                        const amountElement = document.createElement('div');
-                        amountElement.classList.add('font-bold', 'text-lg', textColor);
-                        amountElement.textContent = `${sign}${docData.amount} TK`;
-
-                        const timeElement = document.createElement('div');
-                        timeElement.classList.add('text-xs', 'text-gray-500', 'dark:text-gray-400', 'mt-1');
-                        const date = docData.timestamp ? docData.timestamp.toDate().toLocaleString() : 'N/A';
-                        timeElement.textContent = `Time: ${date}`;
-
-                        transactionElement.appendChild(nameElement);
-                        transactionElement.appendChild(amountElement);
-                        transactionElement.appendChild(timeElement);
-                        transactionsContainer.appendChild(transactionElement);
-                        transactionsContainer.scrollTop = transactionsContainer.scrollHeight;
-                    });
-                });
-
-                const sentButton = document.getElementById('btn-sent');
-                const receivedButton = document.getElementById('btn-received');
-
-                const saveTransaction = async (type) => {
-                    const recipient = recipientInput.value.trim();
-                    const amount = parseFloat(amountInput.value);
-
-                    if (recipient && !isNaN(amount) && amount > 0) {
-                        try {
-                            await addDoc(transactionsCol, {
-                                recipient: recipient,
-                                amount: amount,
-                                type: type,
-                                userId: userId, // Ensure user ID is saved with transaction
-                                timestamp: serverTimestamp()
-                            });
-                            recipientInput.value = '';
-                            amountInput.value = '';
-                        } catch (error) {
-                            console.error("Error saving transaction: ", error);
-                        }
-                    }
-                };
-
-                sentButton.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    saveTransaction('sent');
-                });
-
-                receivedButton.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        saveTransaction('received');
-                    });
             } else {
                 // Not logged in
                 userId = '';
@@ -364,6 +383,270 @@
                 userInfoContainer.classList.add('hidden');
             }
         });
+
+        // Function to setup Customer UI
+        const setupCustomerUI = (userSnap) => {
+            tongkaBalance.textContent = userSnap.data().balance;
+            const transactionsCol = collection(db, `artifacts/${firebaseConfig.projectId}/users/${userId}/transaction_log`);
+
+            onSnapshot(query(transactionsCol), async (snapshot) => {
+                transactionsContainer.innerHTML = '';
+                const transactions = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
+                transactions.sort((a, b) => (a.timestamp ? a.timestamp.toDate() : 0) - (b.timestamp ? b.timestamp.toDate() : 0));
+                
+                for (const docData of transactions) {
+                    const transactionElement = document.createElement('div');
+                    transactionElement.classList.add('p-3', 'rounded-lg', 'shadow-sm', 'flex', 'flex-col', 'border', 'border-gray-200', 'dark:border-gray-600');
+                    
+                    let bgColor = '';
+                    let textColor = '';
+                    let sign = '';
+                    let senderOrReceiver = '';
+                    let senderIdDisplay = '';
+
+                    if (docData.type === 'credit' || docData.type === 'issued') {
+                        bgColor = 'bg-green-100 dark:bg-green-800';
+                        textColor = 'text-green-800 dark:text-green-200';
+                        sign = '+';
+                        senderOrReceiver = 'Received from';
+                        senderIdDisplay = docData.sender_id ? docData.sender_id.substring(0, 8) + '...' : 'N/A';
+                    } else if (docData.type === 'debit') {
+                        bgColor = 'bg-red-100 dark:bg-red-800';
+                        textColor = 'text-red-800 dark:text-red-200';
+                        sign = '-';
+                        senderOrReceiver = 'Sent to';
+                        senderIdDisplay = docData.recipient_id ? docData.recipient_id.substring(0, 8) + '...' : 'N/A';
+                    }
+
+                    transactionElement.classList.add(bgColor);
+                    
+                    const senderElement = document.createElement('div');
+                    senderElement.classList.add('font-semibold', 'text-sm', textColor);
+                    senderElement.textContent = `${senderOrReceiver}: ${senderIdDisplay}`;
+
+                    const amountElement = document.createElement('div');
+                    amountElement.classList.add('font-bold', 'text-lg', textColor);
+                    amountElement.textContent = `${sign}${docData.amount} TK`;
+
+                    const timeElement = document.createElement('div');
+                    timeElement.classList.add('text-xs', 'text-gray-500', 'dark:text-gray-400', 'mt-1');
+                    const date = docData.timestamp ? docData.timestamp.toDate().toLocaleString() : 'N/A';
+                    timeElement.textContent = `Time: ${date}`;
+
+                    transactionElement.appendChild(senderElement);
+                    transactionElement.appendChild(amountElement);
+                    transactionElement.appendChild(timeElement);
+                    transactionsContainer.appendChild(transactionElement);
+                    transactionsContainer.scrollTop = transactionsContainer.scrollHeight;
+                }
+            });
+
+            // Hold-to-confirm logic
+            holdButton.addEventListener('mousedown', startHold);
+            holdButton.addEventListener('mouseup', endHold);
+            holdButton.addEventListener('mouseleave', endHold);
+            holdButton.addEventListener('touchstart', startHold);
+            holdButton.addEventListener('touchend', endHold);
+
+            function startHold(e) {
+                e.preventDefault();
+                const recipientId = recipientIdInput.value.trim();
+                const amount = parseFloat(transactionAmountInput.value);
+
+                if (!recipientId || isNaN(amount) || amount <= 0) {
+                    holdMessage.textContent = 'Please enter a valid recipient ID and amount.';
+                    holdMessage.classList.remove('hidden');
+                    return;
+                }
+                
+                holdText.textContent = 'Releasing...';
+                holdCircle.querySelector('circle').style.stroke = '#34D399'; // Green color for progress
+                holdCircle.querySelector('circle').style.transition = `stroke-dashoffset ${HOLD_DURATION / 1000}s linear`;
+                holdCircle.querySelector('circle').style.strokeDashoffset = '0';
+                
+                holdTimer = setTimeout(async () => {
+                    await processTransaction(recipientId, amount);
+                    endHold(true);
+                }, HOLD_DURATION);
+            }
+
+            function endHold(completed = false) {
+                clearTimeout(holdTimer);
+                holdCircle.querySelector('circle').style.transition = 'none';
+                holdCircle.querySelector('circle').style.strokeDashoffset = circleCircumference;
+                holdText.textContent = 'Hold to Share';
+                if (!completed) {
+                    holdMessage.textContent = 'Hold released. Transaction canceled.';
+                    holdMessage.classList.remove('hidden');
+                } else {
+                    holdMessage.classList.add('hidden');
+                }
+            }
+
+            async function processTransaction(recipientId, amount) {
+                const senderId = userId;
+                const recipientRef = doc(db, `artifacts/${firebaseConfig.projectId}/users/${recipientId}`);
+
+                try {
+                    await runTransaction(db, async (transaction) => {
+                        const senderSnap = await transaction.get(doc(db, `artifacts/${firebaseConfig.projectId}/users/${senderId}`));
+                        const recipientSnap = await transaction.get(recipientRef);
+
+                        // Check sender balance
+                        const senderBalance = senderSnap.data().balance;
+                        if (senderBalance < amount) {
+                            displayError("Insufficient Tongka balance.");
+                            return Promise.reject("Insufficient funds.");
+                        }
+
+                        // Check recipient exists and is a customer
+                        if (!recipientSnap.exists() || recipientSnap.data().role !== 'customer') {
+                            displayError("Recipient does not exist or is not a customer.");
+                            return Promise.reject("Invalid recipient.");
+                        }
+
+                        // Update balances
+                        const newSenderBalance = senderBalance - amount;
+                        const newRecipientBalance = recipientSnap.data().balance + amount;
+                        transaction.update(doc(db, `artifacts/${firebaseConfig.projectId}/users/${senderId}`), { balance: newSenderBalance });
+                        transaction.update(recipientRef, { balance: newRecipientBalance });
+
+                        // Log transaction for sender (debit)
+                        const senderLogRef = collection(db, `artifacts/${firebaseConfig.projectId}/users/${senderId}/transaction_log`);
+                        transaction.set(doc(senderLogRef), {
+                            type: 'debit',
+                            amount: amount,
+                            recipient_id: recipientId,
+                            sender_id: senderId,
+                            timestamp: serverTimestamp()
+                        });
+
+                        // Log transaction for recipient (credit)
+                        const recipientLogRef = collection(db, `artifacts/${firebaseConfig.projectId}/users/${recipientId}/transaction_log`);
+                        transaction.set(doc(recipientLogRef), {
+                            type: 'credit',
+                            amount: amount,
+                            recipient_id: recipientId,
+                            sender_id: senderId,
+                            timestamp: serverTimestamp()
+                        });
+
+                        // Clear inputs
+                        recipientIdInput.value = '';
+                        transactionAmountInput.value = '';
+
+                        holdMessage.textContent = 'Transaction completed!';
+                        holdMessage.classList.remove('hidden');
+                        setTimeout(() => holdMessage.classList.add('hidden'), 3000);
+                    });
+                } catch (error) {
+                    console.error("Transaction failed: ", error);
+                    displayError(error.message || "Transaction failed. Please try again.");
+                }
+            }
+
+            // Update balance in real-time
+            onSnapshot(doc(db, `artifacts/${firebaseConfig.projectId}/users/${userId}`), (docSnap) => {
+                if (docSnap.exists() && docSnap.data().role === 'customer') {
+                    tongkaBalance.textContent = docSnap.data().balance;
+                }
+            });
+        };
+
+        // Function to setup Shop Owner UI
+        const setupShopOwnerUI = () => {
+            issueTongkaBtn.addEventListener('click', async () => {
+                const recipientId = issueRecipientIdInput.value.trim();
+                const amount = parseFloat(issueAmountInput.value);
+
+                if (!recipientId || isNaN(amount) || amount <= 0) {
+                    issueMessage.textContent = "Please enter a valid customer ID and amount.";
+                    issueMessage.classList.remove('hidden');
+                    return;
+                }
+
+                const recipientRef = doc(db, `artifacts/${firebaseConfig.projectId}/users/${recipientId}`);
+
+                try {
+                    await runTransaction(db, async (transaction) => {
+                        const recipientSnap = await transaction.get(recipientRef);
+
+                        // Check if recipient exists and is a customer
+                        if (!recipientSnap.exists() || recipientSnap.data().role !== 'customer') {
+                            issueMessage.textContent = "Recipient does not exist or is not a customer.";
+                            issueMessage.classList.remove('hidden');
+                            return Promise.reject("Invalid recipient.");
+                        }
+
+                        // Update customer's balance
+                        const newRecipientBalance = recipientSnap.data().balance + amount;
+                        transaction.update(recipientRef, { balance: newRecipientBalance });
+
+                        // Log transaction for the shop owner
+                        const shopOwnerLogRef = collection(db, `artifacts/${firebaseConfig.projectId}/users/${userId}/transaction_log`);
+                        transaction.set(doc(shopOwnerLogRef), {
+                            type: 'issued',
+                            amount: amount,
+                            recipient_id: recipientId,
+                            sender_id: userId,
+                            timestamp: serverTimestamp()
+                        });
+                        
+                        // Log transaction for the customer (credit)
+                        const recipientLogRef = collection(db, `artifacts/${firebaseConfig.projectId}/users/${recipientId}/transaction_log`);
+                        transaction.set(doc(recipientLogRef), {
+                            type: 'credit',
+                            amount: amount,
+                            recipient_id: recipientId,
+                            sender_id: userId,
+                            timestamp: serverTimestamp()
+                        });
+
+                        issueMessage.textContent = "Tongka issued successfully!";
+                        issueMessage.classList.remove('hidden');
+                        setTimeout(() => issueMessage.classList.add('hidden'), 3000);
+                        issueRecipientIdInput.value = '';
+                        issueAmountInput.value = '';
+                    });
+                } catch (error) {
+                    console.error("Issue transaction failed: ", error);
+                    issueMessage.textContent = error.message || "Failed to issue Tongka. Please try again.";
+                    issueMessage.classList.remove('hidden');
+                }
+            });
+
+            const transactionsCol = collection(db, `artifacts/${firebaseConfig.projectId}/users/${userId}/transaction_log`);
+            onSnapshot(query(transactionsCol), async (snapshot) => {
+                shopOwnerTransactionsContainer.innerHTML = '';
+                const transactions = snapshot.docs.map(doc => doc.data());
+                transactions.sort((a, b) => (a.timestamp ? a.timestamp.toDate() : 0) - (b.timestamp ? b.timestamp.toDate() : 0));
+
+                for (const docData of transactions) {
+                    const transactionElement = document.createElement('div');
+                    transactionElement.classList.add('p-3', 'rounded-lg', 'shadow-sm', 'flex', 'flex-col', 'border', 'border-gray-200', 'dark:border-gray-600');
+                    transactionElement.classList.add('bg-green-100', 'dark:bg-green-800');
+                    
+                    const senderElement = document.createElement('div');
+                    senderElement.classList.add('font-semibold', 'text-sm', 'text-green-800', 'dark:text-green-200');
+                    senderElement.textContent = `Issued to: ${docData.recipient_id.substring(0, 8)}...`;
+                    
+                    const amountElement = document.createElement('div');
+                    amountElement.classList.add('font-bold', 'text-lg', 'text-green-800', 'dark:text-green-200');
+                    amountElement.textContent = `${docData.amount} TK`;
+
+                    const timeElement = document.createElement('div');
+                    timeElement.classList.add('text-xs', 'text-gray-500', 'dark:text-gray-400', 'mt-1');
+                    const date = docData.timestamp ? docData.timestamp.toDate().toLocaleString() : 'N/A';
+                    timeElement.textContent = `Time: ${date}`;
+
+                    transactionElement.appendChild(senderElement);
+                    transactionElement.appendChild(amountElement);
+                    transactionElement.appendChild(timeElement);
+                    shopOwnerTransactionsContainer.appendChild(transactionElement);
+                    shopOwnerTransactionsContainer.scrollTop = shopOwnerTransactionsContainer.scrollHeight;
+                }
+            });
+        };
     </script>
 </body>
 </html>

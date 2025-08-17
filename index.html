@@ -1,652 +1,609 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tongka Super App</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font: Inter -->
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tongka Super App (Fixed)</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    .blinking-icon { animation: blink 1.5s infinite; }
+    .progress-ring__circle { transition: stroke-dashoffset 0.35s; transform: rotate(-90deg); transform-origin: 50% 50%; }
+  </style>
+
+  <!-- App Favicon -->
+  <link
+    rel="icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect x='2' y='5' width='20' height='14' rx='3' stroke='currentColor' stroke-width='2' fill='none'/><path d='M7 12h2m4 0h5M12 8v8' stroke='currentColor' stroke-width='2' stroke-linecap='round'/><text x='12' y='15' font-family='Arial' font-size='10' font-weight='bold' text-anchor='middle' fill='currentColor'>৳</text></svg>"
+  />
+
+  <!-- (Optional) PWA manifest + iOS meta -->
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Tongka App" />
+  <link rel="apple-touch-icon" href="https://placehold.co/180x180/007bff/ffffff?text=TA" />
+
+  <!--
+    IMPORTANT: Add Firestore security rules in your Firebase Console.
+    Suggested starting point (tighten as needed):
+
+    rules_version = '2';
+    service cloud.firestore {
+      match /databases/{database}/documents {
+        match /users/{uid} {
+          allow read: if request.auth != null && request.auth.uid == uid;
+          // Only allow server-side balance changes via Cloud Functions in production.
+          allow update: if request.auth != null && request.auth.uid == uid &&
+                        !("balance" in request.resource.data.diff(resource.data).changedKeys());
+          allow create: if request.auth != null && request.auth.uid == uid;
         }
-        /* Blinking icon animation */
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+
+        match /users/{uid}/transaction_log/{docId} {
+          allow read: if request.auth != null && request.auth.uid == uid;
+          allow create: if request.auth != null && request.auth.uid == uid;
         }
-        .blinking-icon {
-            animation: blink 1.5s infinite;
+
+        match /chat_messages/{docId} {
+          allow read: if request.auth != null;
+          allow create: if request.auth != null;
         }
-        /* Progress circle for hold-to-confirm */
-        .progress-ring__circle {
-            transition: stroke-dashoffset 0.35s;
-            transform: rotate(-90deg);
-            transform-origin: 50% 50%;
-        }
-    </style>
-    <!-- App Favicon -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect x='2' y='5' width='20' height='14' rx='3' stroke='currentColor' stroke-width='2' fill='none'/><path d='M7 12h2m4 0h5M12 8v8' stroke='currentColor' stroke-width='2' stroke-linecap='round'/><text x='12' y='15' font-family='Arial' font-size='10' font-weight='bold' text-anchor='middle' fill='currentColor'>৳</text></svg>">
-    <!-- PWA Manifest for Android/Chrome -->
-    <link rel="manifest" href="/manifest.json">
-    <!-- Apple iOS Meta Tags for "Add to Home Screen" -->
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Tongka App">
-    <!-- Apple Touch Icon -->
-    <link rel="apple-touch-icon" href="https://placehold.co/180x180/007bff/ffffff?text=TA">
+      }
+    }
+  -->
 </head>
+
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen flex flex-col items-center justify-center p-4 md:p-8">
-
-    <!-- Main App Container -->
-    <div id="app-container" class="max-w-4xl w-full bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 md:p-8 flex flex-col h-[90vh]">
-        
-        <!-- Blinking Icon and Title -->
-        <div class="flex items-center justify-center mb-6">
-            <svg class="blinking-icon text-blue-600 dark:text-blue-400 mr-4" width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="2" y="5" width="20" height="14" rx="3" stroke="currentColor" stroke-width="2"/>
-                <path d="M7 12h2m4 0h5M12 8v8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                <text x="12" y="15" font-family="Arial" font-size="10" font-weight="bold" text-anchor="middle" fill="currentColor">৳</text>
-            </svg>
-            <h1 class="text-3xl font-bold text-blue-600 dark:text-blue-400">Tongka Super App</h1>
-        </div>
-
-        <!-- Login/Signup Form (Initially visible) -->
-        <div id="auth-container" class="flex-grow flex items-center justify-center">
-            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-6 w-full max-w-sm shadow-md">
-                <h2 id="auth-title" class="text-2xl font-semibold mb-4 text-center">Sign Up</h2>
-                <input id="auth-email" type="email" placeholder="Email" class="w-full p-3 mb-3 rounded-lg border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-900 transition-all duration-300">
-                <input id="auth-password" type="password" placeholder="Password" class="w-full p-3 mb-3 rounded-lg border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-900 transition-all duration-300">
-                
-                <!-- Role Selection -->
-                <div id="role-selection" class="flex justify-center space-x-4 mb-4">
-                    <label class="inline-flex items-center">
-                        <input type="radio" name="user-role" value="customer" class="form-radio text-blue-600" checked>
-                        <span class="ml-2 text-sm">Customer</span>
-                    </label>
-                    <label class="inline-flex items-center">
-                        <input type="radio" name="user-role" value="shop_owner" class="form-radio text-blue-600">
-                        <span class="ml-2 text-sm">Shop Owner</span>
-                    </label>
-                </div>
-
-                <div id="error-message" class="text-red-500 text-sm mb-2 hidden"></div>
-                <button id="auth-btn" class="w-full bg-blue-500 text-white p-3 rounded-lg font-semibold hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300">
-                    Sign Up
-                </button>
-                <button id="toggle-auth" class="w-full mt-2 text-sm text-blue-500 hover:text-blue-600 focus:outline-none transition-all duration-300">
-                    Already have an account? Log In
-                </button>
-            </div>
-        </div>
-        
-        <!-- App Content (Hidden until logged in) -->
-        <div id="app-content" class="flex flex-col md:flex-row flex-grow gap-6 hidden">
-            <!-- Left Side: Chat Section -->
-            <div class="flex flex-col flex-1">
-                <h2 class="text-xl font-semibold mb-2 text-center text-gray-800 dark:text-gray-200">Chat</h2>
-                <div id="messages" class="flex-grow overflow-y-auto mb-4 border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-4 bg-gray-50 dark:bg-gray-700">
-                    <!-- Messages will be dynamically added here -->
-                </div>
-                <form id="message-form" class="flex space-x-2">
-                    <input id="message-input" type="text" placeholder="Type your message..." class="flex-grow p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-900 transition-all duration-300">
-                    <button type="submit" class="bg-blue-500 text-white p-3 rounded-lg font-semibold hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300">
-                        Send
-                    </button>
-                </form>
-            </div>
-
-            <!-- Right Side: Transaction Section -->
-            <div class="flex flex-col flex-1 mt-6 md:mt-0">
-                <div id="customer-ui" class="hidden h-full flex flex-col">
-                    <!-- Customer UI -->
-                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 w-full shadow-md mb-4 flex flex-col items-center">
-                        <div class="text-lg text-gray-500 dark:text-gray-400 mb-1">Your Tongka Balance</div>
-                        <div id="tongka-balance" class="text-5xl font-bold text-green-500 dark:text-green-400">0</div>
-                    </div>
-
-                    <h2 class="text-xl font-semibold mb-2 text-center text-gray-800 dark:text-gray-200">Share Tongka</h2>
-                    <div class="mb-4 border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-700">
-                        <div class="mb-2">
-                            <label for="recipient-id" class="block text-sm font-medium mb-1">Recipient ID</label>
-                            <input type="text" id="recipient-id" placeholder="Enter Recipient's User ID" class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-900 transition-all duration-300">
-                        </div>
-                        <div class="mb-4">
-                            <label for="transaction-amount" class="block text-sm font-medium mb-1">Amount (TK)</label>
-                            <input type="number" id="transaction-amount" placeholder="0.00" class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-900 transition-all duration-300">
-                        </div>
-                        <!-- Hold-to-confirm button -->
-                        <div class="relative flex items-center justify-center">
-                            <div id="hold-button" class="w-40 h-40 rounded-full bg-blue-500 text-white flex items-center justify-center text-center font-bold text-lg cursor-pointer select-none transition-all duration-300 hover:bg-blue-600">
-                                <span id="hold-text">Hold to Share</span>
-                            </div>
-                            <svg id="hold-circle" class="absolute inset-0 w-full h-full" viewBox="0 0 120 120">
-                                <circle class="progress-ring__circle" stroke="#34D399" stroke-width="8" fill="transparent" r="56" cx="60" cy="60" stroke-dasharray="351.858" stroke-dashoffset="351.858" />
-                            </svg>
-                        </div>
-                        <div id="hold-message" class="mt-4 text-center text-sm text-gray-500 dark:text-gray-400 hidden"></div>
-                    </div>
-                    
-                    <h2 class="text-xl font-semibold mb-2 text-center text-gray-800 dark:text-gray-200">Transaction Log</h2>
-                    <div id="transactions" class="flex-grow overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-2 bg-gray-50 dark:bg-gray-700">
-                        <!-- Transactions will be dynamically added here -->
-                    </div>
-                </div>
-
-                <div id="shop-owner-ui" class="hidden h-full flex flex-col">
-                    <!-- Shop Owner UI -->
-                    <h2 class="text-xl font-semibold mb-2 text-center text-gray-800 dark:text-gray-200">Issue Tongka</h2>
-                    <div class="mb-4 border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-700">
-                        <div class="mb-2">
-                            <label for="issue-recipient-id" class="block text-sm font-medium mb-1">Customer User ID</label>
-                            <input type="text" id="issue-recipient-id" placeholder="Enter Customer User ID" class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-900 transition-all duration-300">
-                        </div>
-                        <div class="mb-4">
-                            <label for="issue-amount" class="block text-sm font-medium mb-1">Amount (TK)</label>
-                            <input type="number" id="issue-amount" placeholder="0.00" class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-900 transition-all duration-300">
-                        </div>
-                        <button id="issue-tongka-btn" class="w-full bg-blue-500 text-white p-3 rounded-lg font-semibold hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300">
-                            Issue Tongka
-                        </button>
-                        <div id="issue-message" class="mt-2 text-center text-sm text-green-500 hidden"></div>
-                    </div>
-                    
-                    <h2 class="text-xl font-semibold mb-2 text-center text-gray-800 dark:text-gray-200">My Issued Log</h2>
-                    <div id="shop-owner-transactions" class="flex-grow overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-2 bg-gray-50 dark:bg-gray-700">
-                        <!-- Shop owner transactions will be dynamically added here -->
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- User ID Display & Logout Button -->
-        <div class="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
-            <span id="user-info" class="hidden">
-                Your User ID: <span id="user-id" class="font-mono text-gray-700 dark:text-gray-300"></span>
-                <button id="logout-btn" class="ml-4 text-red-500 hover:text-red-600 focus:outline-none">Log Out</button>
-            </span>
-        </div>
+  <div id="app-container" class="max-w-4xl w-full bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 md:p-8 flex flex-col h-[90vh]">
+    <!-- Header -->
+    <div class="flex items-center justify-center mb-6">
+      <svg class="blinking-icon text-blue-600 dark:text-blue-400 mr-4" width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="2" y="5" width="20" height="14" rx="3" stroke="currentColor" stroke-width="2" />
+        <path d="M7 12h2m4 0h5M12 8v8" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        <text x="12" y="15" font-family="Arial" font-size="10" font-weight="bold" text-anchor="middle" fill="currentColor">৳</text>
+      </svg>
+      <h1 class="text-3xl font-bold text-blue-600 dark:text-blue-400">Tongka Super App</h1>
     </div>
 
-    <!-- Firebase SDKs -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp, query, where, doc, getDoc, setDoc, updateDoc, runTransaction } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js";
-        
-        // This is the firebaseConfig object you provided.
-        const firebaseConfig = {
-          apiKey: "AIzaSyDMta_gH4iXrNoQPDlXCdPzPhmVChXrmxI",
-          authDomain: "tongka-the-super-app-d0758.firebaseapp.com",
-          projectId: "tongka-the-super-app-d0758",
-          storageBucket: "tongka-the-super-app-d0758.firebasestorage.app",
-          messagingSenderId: "471290350316",
-          appId: "1:471290350316:web:6b78c6642626c06b1c73c9",
-          measurementId: "G-9EYXHK9NJY"
-        };
-        
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-        
-        let userId = '';
-        let currentUserRole = '';
+    <!-- Auth -->
+    <div id="auth-container" class="flex-grow flex items-center justify-center">
+      <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-6 w-full max-w-sm shadow-md">
+        <h2 id="auth-title" class="text-2xl font-semibold mb-4 text-center">Sign Up</h2>
+        <input id="auth-email" type="email" placeholder="Email" class="w-full p-3 mb-3 rounded-lg border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-900 transition-all duration-300" />
+        <input id="auth-password" type="password" placeholder="Password" class="w-full p-3 mb-3 rounded-lg border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-900 transition-all duration-300" />
 
-        // UI Elements
-        const authContainer = document.getElementById('auth-container');
-        const appContent = document.getElementById('app-content');
-        const authTitle = document.getElementById('auth-title');
-        const authBtn = document.getElementById('auth-btn');
-        const authEmail = document.getElementById('auth-email');
-        const authPassword = document.getElementById('auth-password');
-        const toggleAuthBtn = document.getElementById('toggle-auth');
-        const userIdDisplay = document.getElementById('user-id');
-        const userInfoContainer = document.getElementById('user-info');
-        const logoutBtn = document.getElementById('logout-btn');
-        const errorMessageDiv = document.getElementById('error-message');
-        const roleSelection = document.getElementById('role-selection');
-        const customerUI = document.getElementById('customer-ui');
-        const shopOwnerUI = document.getElementById('shop-owner-ui');
+        <div id="role-selection" class="flex justify-center space-x-4 mb-4">
+          <label class="inline-flex items-center">
+            <input type="radio" name="user-role" value="customer" class="form-radio text-blue-600" checked />
+            <span class="ml-2 text-sm">Customer</span>
+          </label>
+          <label class="inline-flex items-center">
+            <input type="radio" name="user-role" value="shop_owner" class="form-radio text-blue-600" />
+            <span class="ml-2 text-sm">Shop Owner</span>
+          </label>
+        </div>
 
-        // Customer UI Elements
-        const tongkaBalance = document.getElementById('tongka-balance');
-        const recipientIdInput = document.getElementById('recipient-id');
-        const transactionAmountInput = document.getElementById('transaction-amount');
-        const transactionsContainer = document.getElementById('transactions');
-        const holdButton = document.getElementById('hold-button');
-        const holdText = document.getElementById('hold-text');
-        const holdCircle = document.getElementById('hold-circle');
-        const holdMessage = document.getElementById('hold-message');
-        const circleRadius = 56;
-        const circleCircumference = 2 * Math.PI * circleRadius;
-        holdCircle.querySelector('circle').style.strokeDasharray = `${circleCircumference} ${circleCircumference}`;
-        holdCircle.querySelector('circle').style.strokeDashoffset = circleCircumference;
-        let holdTimer;
-        const HOLD_DURATION = 1500; // 1.5 seconds
+        <div id="error-message" class="text-red-500 text-sm mb-2 hidden"></div>
+        <button id="auth-btn" class="w-full bg-blue-500 text-white p-3 rounded-lg font-semibold hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300">Sign Up</button>
+        <button id="toggle-auth" class="w-full mt-2 text-sm text-blue-500 hover:text-blue-600 focus:outline-none transition-all duration-300">Already have an account? Log In</button>
+      </div>
+    </div>
 
-        // Shop Owner UI Elements
-        const issueRecipientIdInput = document.getElementById('issue-recipient-id');
-        const issueAmountInput = document.getElementById('issue-amount');
-        const issueTongkaBtn = document.getElementById('issue-tongka-btn');
-        const issueMessage = document.getElementById('issue-message');
-        const shopOwnerTransactionsContainer = document.getElementById('shop-owner-transactions');
-        
-        // State for auth form
-        let isSigningUp = true;
+    <!-- App Content -->
+    <div id="app-content" class="flex flex-col md:flex-row flex-grow gap-6 hidden">
+      <!-- Chat -->
+      <div class="flex flex-col flex-1">
+        <h2 class="text-xl font-semibold mb-2 text-center text-gray-800 dark:text-gray-200">Chat</h2>
+        <div id="messages" class="flex-grow overflow-y-auto mb-4 border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-4 bg-gray-50 dark:bg-gray-700"></div>
+        <form id="message-form" class="flex space-x-2">
+          <input id="message-input" type="text" placeholder="Type your message..." class="flex-grow p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-900 transition-all duration-300" />
+          <button type="submit" class="bg-blue-500 text-white p-3 rounded-lg font-semibold hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300">Send</button>
+        </form>
+      </div>
 
-        // Toggle between Sign Up and Log In
-        toggleAuthBtn.addEventListener('click', () => {
-            isSigningUp = !isSigningUp;
-            errorMessageDiv.classList.add('hidden'); // Hide error on toggle
-            roleSelection.classList.toggle('hidden', !isSigningUp);
-            if (isSigningUp) {
-                authTitle.textContent = 'Sign Up';
-                authBtn.textContent = 'Sign Up';
-                toggleAuthBtn.textContent = 'Already have an account? Log In';
-            } else {
-                authTitle.textContent = 'Log In';
-                authBtn.textContent = 'Log In';
-                toggleAuthBtn.textContent = 'Need an account? Sign Up';
-            }
+      <!-- Right Side: Role-based -->
+      <div class="flex flex-col flex-1 mt-6 md:mt-0">
+        <!-- Customer UI -->
+        <div id="customer-ui" class="hidden h-full flex flex-col">
+          <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 w-full shadow-md mb-4 flex flex-col items-center">
+            <div class="text-lg text-gray-500 dark:text-gray-400 mb-1">Your Tongka Balance</div>
+            <div id="tongka-balance" class="text-5xl font-bold text-green-500 dark:text-green-400">0</div>
+          </div>
+
+          <h2 class="text-xl font-semibold mb-2 text-center text-gray-800 dark:text-gray-200">Share Tongka</h2>
+          <div class="mb-4 border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-700">
+            <div class="mb-2">
+              <label for="recipient-id" class="block text-sm font-medium mb-1">Recipient ID</label>
+              <input type="text" id="recipient-id" placeholder="Enter Recipient's User ID" class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-900 transition-all duration-300" />
+            </div>
+            <div class="mb-4">
+              <label for="transaction-amount" class="block text-sm font-medium mb-1">Amount (TK)</label>
+              <input type="number" id="transaction-amount" placeholder="0.00" class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-900 transition-all duration-300" />
+            </div>
+
+            <!-- Hold to confirm -->
+            <div class="relative flex items-center justify-center">
+              <div id="hold-button" class="w-40 h-40 rounded-full bg-blue-500 text-white flex items-center justify-center text-center font-bold text-lg cursor-pointer select-none transition-all duration-300 hover:bg-blue-600">
+                <span id="hold-text">Hold to Confirm</span>
+              </div>
+              <svg id="hold-circle" class="absolute inset-0 w-full h-full" viewBox="0 0 120 120">
+                <circle class="progress-ring__circle" stroke="#34D399" stroke-width="8" fill="transparent" r="56" cx="60" cy="60" stroke-dasharray="351.858" stroke-dashoffset="351.858" />
+              </svg>
+            </div>
+            <div id="hold-message" class="mt-4 text-center text-sm text-gray-500 dark:text-gray-400 hidden"></div>
+          </div>
+
+          <h2 class="text-xl font-semibold mb-2 text-center text-gray-800 dark:text-gray-200">Transaction Log</h2>
+          <div id="transactions" class="flex-grow overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-2 bg-gray-50 dark:bg-gray-700"></div>
+        </div>
+
+        <!-- Shop Owner UI -->
+        <div id="shop-owner-ui" class="hidden h-full flex flex-col">
+          <h2 class="text-xl font-semibold mb-2 text-center text-gray-800 dark:text-gray-200">Issue Tongka</h2>
+          <div class="mb-4 border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-700">
+            <div class="mb-2">
+              <label for="issue-recipient-id" class="block text-sm font-medium mb-1">Customer User ID</label>
+              <input type="text" id="issue-recipient-id" placeholder="Enter Customer User ID" class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-900 transition-all duration-300" />
+            </div>
+            <div class="mb-4">
+              <label for="issue-amount" class="block text-sm font-medium mb-1">Amount (TK)</label>
+              <input type="number" id="issue-amount" placeholder="0.00" class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-900 transition-all duration-300" />
+            </div>
+            <button id="issue-tongka-btn" class="w-full bg-blue-500 text-white p-3 rounded-lg font-semibold hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300">Issue Tongka</button>
+            <div id="issue-message" class="mt-2 text-center text-sm text-green-500 hidden"></div>
+          </div>
+
+          <h2 class="text-xl font-semibold mb-2 text-center text-gray-800 dark:text-gray-200">My Issued Log</h2>
+          <div id="shop-owner-transactions" class="flex-grow overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-2 bg-gray-50 dark:bg-gray-700"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- User ID & Logout -->
+    <div class="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
+      <span id="user-info" class="hidden">
+        Your User ID: <span id="user-id" class="font-mono text-gray-700 dark:text-gray-300"></span>
+        <button id="logout-btn" class="ml-4 text-red-500 hover:text-red-600 focus:outline-none">Log Out</button>
+      </span>
+    </div>
+  </div>
+
+  <!-- Firebase SDKs -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      onSnapshot,
+      serverTimestamp,
+      query,
+      where,
+      doc,
+      getDoc,
+      setDoc,
+      updateDoc,
+      runTransaction,
+      orderBy,
+      limit
+    } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
+    import {
+      getAuth,
+      signInWithEmailAndPassword,
+      createUserWithEmailAndPassword,
+      signOut,
+      onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js";
+
+    // Your Firebase config (keep these real values)
+    const firebaseConfig = {
+      apiKey: "AIzaSyDMta_gH4iXrNoQPDlXCdPzPhmVChXrmxI",
+      authDomain: "tongka-the-super-app-d0758.firebaseapp.com",
+      projectId: "tongka-the-super-app-d0758",
+      storageBucket: "tongka-the-super-app-d0758.firebasestorage.app",
+      messagingSenderId: "471290350316",
+      appId: "1:471290350316:web:6b78c6642626c06b1c73c9",
+      measurementId: "G-9EYXHK9NJY",
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    // --------- STATE ---------
+    let userId = "";
+    let currentUserRole = "";
+    let isSigningUp = true;
+
+    // --------- UI ELEMENTS ---------
+    const authContainer = document.getElementById("auth-container");
+    const appContent = document.getElementById("app-content");
+    const authTitle = document.getElementById("auth-title");
+    const authBtn = document.getElementById("auth-btn");
+    const authEmail = document.getElementById("auth-email");
+    const authPassword = document.getElementById("auth-password");
+    const toggleAuthBtn = document.getElementById("toggle-auth");
+    const userIdDisplay = document.getElementById("user-id");
+    const userInfoContainer = document.getElementById("user-info");
+    const logoutBtn = document.getElementById("logout-btn");
+    const errorMessageDiv = document.getElementById("error-message");
+    const roleSelection = document.getElementById("role-selection");
+    const customerUI = document.getElementById("customer-ui");
+    const shopOwnerUI = document.getElementById("shop-owner-ui");
+
+    // Customer UI
+    const tongkaBalance = document.getElementById("tongka-balance");
+    const recipientIdInput = document.getElementById("recipient-id");
+    const transactionAmountInput = document.getElementById("transaction-amount");
+    const transactionsContainer = document.getElementById("transactions");
+    const holdButton = document.getElementById("hold-button");
+    const holdText = document.getElementById("hold-text");
+    const holdCircle = document.getElementById("hold-circle");
+    const holdMessage = document.getElementById("hold-message");
+    const circleRadius = 56;
+    const circleCircumference = 2 * Math.PI * circleRadius;
+    holdCircle.querySelector("circle").style.strokeDasharray = `${circleCircumference} ${circleCircumference}`;
+    holdCircle.querySelector("circle").style.strokeDashoffset = circleCircumference;
+    let holdTimer;
+    const HOLD_DURATION = 1500; // 1.5s
+
+    // Shop UI
+    const issueRecipientIdInput = document.getElementById("issue-recipient-id");
+    const issueAmountInput = document.getElementById("issue-amount");
+    const issueTongkaBtn = document.getElementById("issue-tongka-btn");
+    const issueMessage = document.getElementById("issue-message");
+    const shopOwnerTransactionsContainer = document.getElementById("shop-owner-transactions");
+
+    // --------- HELPERS ---------
+    const displayError = (message) => {
+      errorMessageDiv.textContent = message;
+      errorMessageDiv.classList.remove("hidden");
+      setTimeout(() => errorMessageDiv.classList.add("hidden"), 6000);
+    };
+
+    const safeToDateTime = (ts) => (ts && ts.toDate ? ts.toDate().toLocaleString() : "N/A");
+
+    // --------- AUTH TOGGLE ---------
+    toggleAuthBtn.addEventListener("click", () => {
+      isSigningUp = !isSigningUp;
+      errorMessageDiv.classList.add("hidden");
+      roleSelection.classList.toggle("hidden", !isSigningUp);
+      if (isSigningUp) {
+        authTitle.textContent = "Sign Up";
+        authBtn.textContent = "Sign Up";
+        toggleAuthBtn.textContent = "Already have an account? Log In";
+      } else {
+        authTitle.textContent = "Log In";
+        authBtn.textContent = "Log In";
+        toggleAuthBtn.textContent = "Need an account? Sign Up";
+      }
+    });
+
+    // --------- AUTH SUBMIT ---------
+    authBtn.addEventListener("click", async () => {
+      const email = authEmail.value.trim();
+      const password = authPassword.value.trim();
+      if (!email || !password) return displayError("Please enter both an email and a password.");
+
+      try {
+        if (isSigningUp) {
+          const userCred = await createUserWithEmailAndPassword(auth, email, password);
+          const selectedRole = document.querySelector('input[name="user-role"]:checked').value;
+          const userRef = doc(db, `users/${userCred.user.uid}`);
+          await setDoc(userRef, { role: selectedRole, balance: 0 });
+        } else {
+          await signInWithEmailAndPassword(auth, email, password);
+        }
+      } catch (err) {
+        console.error("Auth error:", err);
+        displayError(err.message || "Authentication failed");
+      }
+    });
+
+    logoutBtn.addEventListener("click", async () => { await signOut(auth); });
+
+    // --------- AUTH STATE ---------
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        userId = "";
+        authContainer.classList.remove("hidden");
+        appContent.classList.add("hidden");
+        userInfoContainer.classList.add("hidden");
+        return;
+      }
+
+      userId = user.uid;
+      userIdDisplay.textContent = userId;
+      authContainer.classList.add("hidden");
+      appContent.classList.remove("hidden");
+      userInfoContainer.classList.remove("hidden");
+
+      // Load role
+      const userRef = doc(db, `users/${userId}`);
+      const userSnap = await getDoc(userRef);
+      if (!userSnap.exists()) {
+        displayError("User record missing. Please sign up again.");
+        return;
+      }
+      currentUserRole = userSnap.data().role;
+
+      if (currentUserRole === "customer") {
+        customerUI.classList.remove("hidden");
+        shopOwnerUI.classList.add("hidden");
+        setupCustomerUI(userSnap);
+      } else if (currentUserRole === "shop_owner") {
+        shopOwnerUI.classList.remove("hidden");
+        customerUI.classList.add("hidden");
+        setupShopOwnerUI();
+      }
+
+      // ----- CHAT (top-level collection) -----
+      const messagesCol = collection(db, `chat_messages`);
+      const messagesQuery = query(messagesCol, orderBy("timestamp", "asc"), limit(100));
+
+      onSnapshot(messagesQuery, (snapshot) => {
+        const messagesContainer = document.getElementById("messages");
+        messagesContainer.innerHTML = "";
+        snapshot.forEach((d) => {
+          const m = d.data();
+          const messageElement = document.createElement("div");
+          messageElement.classList.add("flex", "flex-col", "max-w-[75%]", "p-2", "rounded-lg", "break-words", "shadow-md");
+
+          if (m.userId === userId) {
+            messageElement.classList.add("self-end", "bg-blue-500", "text-white", "rounded-br-none");
+          } else {
+            messageElement.classList.add("self-start", "bg-gray-200", "dark:bg-gray-600", "text-gray-900", "dark:text-gray-100", "rounded-bl-none");
+          }
+
+          const senderElement = document.createElement("span");
+          senderElement.textContent = `User: ${(m.userId || "?").substring(0, 8)}`;
+          senderElement.classList.add("text-xs", "font-semibold", "mb-1", m.userId === userId ? "text-blue-200" : "text-gray-500", "dark:text-gray-300");
+
+          const textElement = document.createElement("p");
+          textElement.textContent = m.text || "";
+          textElement.classList.add("text-sm");
+
+          messageElement.appendChild(senderElement);
+          messageElement.appendChild(textElement);
+          messagesContainer.appendChild(messageElement);
+          messagesContainer.scrollTop = messagesContainer.scrollHeight;
         });
+      });
 
-        // Function to display error message
-        const displayError = (message) => {
-            errorMessageDiv.textContent = message;
-            errorMessageDiv.classList.remove('hidden');
-            setTimeout(() => {
-                errorMessageDiv.classList.add('hidden');
-            }, 5000); // Hide after 5 seconds
-        };
+      const messageForm = document.getElementById("message-form");
+      messageForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const messageInput = document.getElementById("message-input");
+        const text = messageInput.value.trim();
+        if (!text) return;
+        try {
+          await addDoc(collection(db, `chat_messages`), {
+            text,
+            userId,
+            timestamp: serverTimestamp(),
+          });
+          messageInput.value = "";
+        } catch (err) {
+          console.error("Chat write error:", err);
+          displayError("Failed to send message.");
+        }
+      });
+    });
 
-        // Handle authentication
-        authBtn.addEventListener('click', async () => {
-            const email = authEmail.value;
-            const password = authPassword.value;
+    // --------- CUSTOMER SETUP ---------
+    const setupCustomerUI = (userSnap) => {
+      tongkaBalance.textContent = userSnap.data().balance ?? 0;
 
-            if (!email || !password) {
-                displayError("Please enter both an email and a password.");
-                return;
-            }
+      // Real-time balance
+      onSnapshot(doc(db, `users/${userId}`), (d) => {
+        if (d.exists() && d.data().role === "customer") {
+          tongkaBalance.textContent = d.data().balance ?? 0;
+        }
+      });
 
-            try {
-                if (isSigningUp) {
-                    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                    const selectedRole = document.querySelector('input[name="user-role"]:checked').value;
-                    const userRef = doc(db, `artifacts/${firebaseConfig.projectId}/users/${userCredential.user.uid}`);
-                    await setDoc(userRef, {
-                        role: selectedRole,
-                        balance: 0
-                    });
-                } else {
-                    await signInWithEmailAndPassword(auth, email, password);
-                }
-            } catch (error) {
-                console.error("Authentication error:", error.message);
-                displayError(error.message);
-            }
+      // Transactions stream
+      const transactionsCol = collection(db, `users/${userId}/transaction_log`);
+      const txQuery = query(transactionsCol, orderBy("timestamp", "asc"), limit(200));
+      onSnapshot(txQuery, (snapshot) => {
+        transactionsContainer.innerHTML = "";
+        snapshot.forEach((d) => {
+          const t = d.data();
+          const el = document.createElement("div");
+          el.classList.add("p-3", "rounded-lg", "shadow-sm", "flex", "flex-col", "border", "border-gray-200", "dark:border-gray-600");
+
+          let bg = ""; let txt = ""; let sign = ""; let label = ""; let other = "";
+          if (t.type === "credit" || t.type === "issued") {
+            bg = "bg-green-100 dark:bg-green-800"; txt = "text-green-800 dark:text-green-200"; sign = "+"; label = "Received from"; other = (t.sender_id||"").substring(0,8)+"...";
+          } else { // debit
+            bg = "bg-red-100 dark:bg-red-800"; txt = "text-red-800 dark:text-red-200"; sign = "-"; label = "Sent to"; other = (t.recipient_id||"").substring(0,8)+"...";
+          }
+          el.classList.add(bg);
+
+          const a = document.createElement("div"); a.classList.add("font-semibold", "text-sm", txt); a.textContent = `${label}: ${other||"N/A"}`;
+          const b = document.createElement("div"); b.classList.add("font-bold", "text-lg", txt); b.textContent = `${sign}${t.amount} TK`;
+          const c = document.createElement("div"); c.classList.add("text-xs", "text-gray-500", "dark:text-gray-400", "mt-1"); c.textContent = `Time: ${safeToDateTime(t.timestamp)}`;
+
+          el.appendChild(a); el.appendChild(b); el.appendChild(c);
+          transactionsContainer.appendChild(el);
+          transactionsContainer.scrollTop = transactionsContainer.scrollHeight;
         });
-        
-        // Handle Logout
-        logoutBtn.addEventListener('click', async () => {
-            await signOut(auth);
-        });
+      });
 
-        // Main auth state observer
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                userId = user.uid;
-                userIdDisplay.textContent = userId;
-                authContainer.classList.add('hidden');
-                appContent.classList.remove('hidden');
-                userInfoContainer.classList.remove('hidden');
-                
-                // Get user role from Firestore
-                const userRef = doc(db, `artifacts/${firebaseConfig.projectId}/users/${userId}`);
-                const userSnap = await getDoc(userRef);
+      // Hold interactions (mouse + touch)
+      const startHold = (e) => {
+        e.preventDefault();
+        const recipientId = recipientIdInput.value.trim();
+        const amount = parseFloat(transactionAmountInput.value);
+        if (!recipientId || isNaN(amount) || amount <= 0) {
+          holdMessage.textContent = "Please enter a valid recipient ID and amount.";
+          holdMessage.classList.remove("hidden");
+          return;
+        }
+        if (recipientId === userId) {
+          holdMessage.textContent = "You cannot send to yourself.";
+          holdMessage.classList.remove("hidden");
+          return;
+        }
 
-                if (userSnap.exists()) {
-                    currentUserRole = userSnap.data().role;
-                    if (currentUserRole === 'customer') {
-                        customerUI.classList.remove('hidden');
-                        shopOwnerUI.classList.add('hidden');
-                        setupCustomerUI(userSnap);
-                    } else if (currentUserRole === 'shop_owner') {
-                        shopOwnerUI.classList.remove('hidden');
-                        customerUI.classList.add('hidden');
-                        setupShopOwnerUI();
-                    }
-                }
-                
-                // --- Chat Section Logic ---
-                const messagesCol = collection(db, `artifacts/${firebaseConfig.projectId}/public/data/chat_messages`);
-                
-                onSnapshot(query(messagesCol), (snapshot) => {
-                    const messagesContainer = document.getElementById('messages');
-                    messagesContainer.innerHTML = '';
-                    
-                    const messages = snapshot.docs.map(doc => doc.data());
-                    messages.sort((a, b) => (a.timestamp ? a.timestamp.toDate() : 0) - (b.timestamp ? b.timestamp.toDate() : 0));
-                    
-                    messages.forEach(docData => {
-                        const messageElement = document.createElement('div');
-                        messageElement.classList.add('flex', 'flex-col', 'max-w-[75%]', 'p-2', 'rounded-lg', 'break-words', 'shadow-md');
-                        
-                        if (docData.userId === userId) {
-                            messageElement.classList.add('self-end', 'bg-blue-500', 'text-white', 'rounded-br-none');
-                        } else {
-                            messageElement.classList.add('self-start', 'bg-gray-200', 'dark:bg-gray-600', 'text-gray-900', 'dark:text-gray-100', 'rounded-bl-none');
-                        }
-                        
-                        const senderIdText = docData.userId.substring(0, 8);
-                        const senderElement = document.createElement('span');
-                        senderElement.textContent = `User: ${senderIdText}`;
-                        senderElement.classList.add('text-xs', 'font-semibold', 'mb-1', docData.userId === userId ? 'text-blue-200' : 'text-gray-500', 'dark:text-gray-300');
-                        
-                        const textElement = document.createElement('p');
-                        textElement.textContent = docData.text;
-                        textElement.classList.add('text-sm');
-                        
-                        messageElement.appendChild(senderElement);
-                        messageElement.appendChild(textElement);
-                        messagesContainer.appendChild(messageElement);
-                        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                    });
-                });
+        holdText.textContent = "Holding… keep holding";
+        const circle = holdCircle.querySelector("circle");
+        circle.style.transition = `stroke-dashoffset ${HOLD_DURATION / 1000}s linear`;
+        circle.style.strokeDashoffset = "0";
 
-                const messageForm = document.getElementById('message-form');
-                messageForm.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    const messageInput = document.getElementById('message-input');
-                    const text = messageInput.value.trim();
+        holdTimer = setTimeout(async () => {
+          await processTransaction(recipientId, amount);
+          endHold(true);
+        }, HOLD_DURATION);
+      };
 
-                    if (text) {
-                        try {
-                            await addDoc(collection(db, `artifacts/${firebaseConfig.projectId}/public/data/chat_messages`), {
-                                text: text,
-                                userId: userId,
-                                timestamp: serverTimestamp()
-                            });
-                            messageInput.value = '';
-                        } catch (error) {
-                            console.error("Error writing document: ", error);
-                        }
-                    }
-                });
+      const endHold = (completed = false) => {
+        clearTimeout(holdTimer);
+        const circle = holdCircle.querySelector("circle");
+        circle.style.transition = "none";
+        circle.style.strokeDashoffset = circleCircumference;
+        holdText.textContent = "Hold to Confirm";
+        if (!completed) {
+          holdMessage.textContent = "Hold released early. Transaction canceled.";
+          holdMessage.classList.remove("hidden");
+        } else {
+          holdMessage.classList.add("hidden");
+        }
+      };
 
-            } else {
-                // Not logged in
-                userId = '';
-                authContainer.classList.remove('hidden');
-                appContent.classList.add('hidden');
-                userInfoContainer.classList.add('hidden');
-            }
-        });
+      ["mousedown","touchstart"].forEach((evt)=> holdButton.addEventListener(evt, startHold));
+      ["mouseup","mouseleave","touchend","touchcancel"].forEach((evt)=> holdButton.addEventListener(evt, () => endHold(false)));
 
-        // Function to setup Customer UI
-        const setupCustomerUI = (userSnap) => {
-            tongkaBalance.textContent = userSnap.data().balance;
-            const transactionsCol = collection(db, `artifacts/${firebaseConfig.projectId}/users/${userId}/transaction_log`);
+      async function processTransaction(recipientId, amount) {
+        const senderId = userId;
+        const senderRef = doc(db, `users/${senderId}`);
+        const recipientRef = doc(db, `users/${recipientId}`);
 
-            onSnapshot(query(transactionsCol), async (snapshot) => {
-                transactionsContainer.innerHTML = '';
-                const transactions = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
-                transactions.sort((a, b) => (a.timestamp ? a.timestamp.toDate() : 0) - (b.timestamp ? b.timestamp.toDate() : 0));
-                
-                for (const docData of transactions) {
-                    const transactionElement = document.createElement('div');
-                    transactionElement.classList.add('p-3', 'rounded-lg', 'shadow-sm', 'flex', 'flex-col', 'border', 'border-gray-200', 'dark:border-gray-600');
-                    
-                    let bgColor = '';
-                    let textColor = '';
-                    let sign = '';
-                    let senderOrReceiver = '';
-                    let senderIdDisplay = '';
+        try {
+          await runTransaction(db, async (trx) => {
+            const senderSnap = await trx.get(senderRef);
+            const recipientSnap = await trx.get(recipientRef);
 
-                    if (docData.type === 'credit' || docData.type === 'issued') {
-                        bgColor = 'bg-green-100 dark:bg-green-800';
-                        textColor = 'text-green-800 dark:text-green-200';
-                        sign = '+';
-                        senderOrReceiver = 'Received from';
-                        senderIdDisplay = docData.sender_id ? docData.sender_id.substring(0, 8) + '...' : 'N/A';
-                    } else if (docData.type === 'debit') {
-                        bgColor = 'bg-red-100 dark:bg-red-800';
-                        textColor = 'text-red-800 dark:text-red-200';
-                        sign = '-';
-                        senderOrReceiver = 'Sent to';
-                        senderIdDisplay = docData.recipient_id ? docData.recipient_id.substring(0, 8) + '...' : 'N/A';
-                    }
+            if (!senderSnap.exists()) throw new Error("Sender missing.");
+            const senderBalance = senderSnap.data().balance ?? 0;
+            if (senderBalance < amount) throw new Error("Insufficient Tongka balance.");
+            if (!recipientSnap.exists() || recipientSnap.data().role !== "customer") throw new Error("Recipient does not exist or is not a customer.");
 
-                    transactionElement.classList.add(bgColor);
-                    
-                    const senderElement = document.createElement('div');
-                    senderElement.classList.add('font-semibold', 'text-sm', textColor);
-                    senderElement.textContent = `${senderOrReceiver}: ${senderIdDisplay}`;
+            trx.update(senderRef, { balance: senderBalance - amount });
+            trx.update(recipientRef, { balance: (recipientSnap.data().balance ?? 0) + amount });
 
-                    const amountElement = document.createElement('div');
-                    amountElement.classList.add('font-bold', 'text-lg', textColor);
-                    amountElement.textContent = `${sign}${docData.amount} TK`;
-
-                    const timeElement = document.createElement('div');
-                    timeElement.classList.add('text-xs', 'text-gray-500', 'dark:text-gray-400', 'mt-1');
-                    const date = docData.timestamp ? docData.timestamp.toDate().toLocaleString() : 'N/A';
-                    timeElement.textContent = `Time: ${date}`;
-
-                    transactionElement.appendChild(senderElement);
-                    transactionElement.appendChild(amountElement);
-                    transactionElement.appendChild(timeElement);
-                    transactionsContainer.appendChild(transactionElement);
-                    transactionsContainer.scrollTop = transactionsContainer.scrollHeight;
-                }
+            const senderLogRef = doc(collection(db, `users/${senderId}/transaction_log`));
+            trx.set(senderLogRef, {
+              type: "debit",
+              amount,
+              recipient_id: recipientId,
+              sender_id: senderId,
+              timestamp: serverTimestamp(),
             });
 
-            // Hold-to-confirm logic
-            holdButton.addEventListener('mousedown', startHold);
-            holdButton.addEventListener('mouseup', endHold);
-            holdButton.addEventListener('mouseleave', endHold);
-            holdButton.addEventListener('touchstart', startHold);
-            holdButton.addEventListener('touchend', endHold);
+            const recipientLogRef = doc(collection(db, `users/${recipientId}/transaction_log`));
+            trx.set(recipientLogRef, {
+              type: "credit",
+              amount,
+              recipient_id: recipientId,
+              sender_id: senderId,
+              timestamp: serverTimestamp(),
+            });
+          });
 
-            function startHold(e) {
-                e.preventDefault();
-                const recipientId = recipientIdInput.value.trim();
-                const amount = parseFloat(transactionAmountInput.value);
+          recipientIdInput.value = "";
+          transactionAmountInput.value = "";
+          holdMessage.textContent = "Transaction completed!";
+          holdMessage.classList.remove("hidden");
+          setTimeout(() => holdMessage.classList.add("hidden"), 3000);
+        } catch (err) {
+          console.error("Transaction failed:", err);
+          displayError(err.message || "Transaction failed. Please try again.");
+        }
+      }
+    };
 
-                if (!recipientId || isNaN(amount) || amount <= 0) {
-                    holdMessage.textContent = 'Please enter a valid recipient ID and amount.';
-                    holdMessage.classList.remove('hidden');
-                    return;
-                }
-                
-                holdText.textContent = 'Releasing...';
-                holdCircle.querySelector('circle').style.stroke = '#34D399'; // Green color for progress
-                holdCircle.querySelector('circle').style.transition = `stroke-dashoffset ${HOLD_DURATION / 1000}s linear`;
-                holdCircle.querySelector('circle').style.strokeDashoffset = '0';
-                
-                holdTimer = setTimeout(async () => {
-                    await processTransaction(recipientId, amount);
-                    endHold(true);
-                }, HOLD_DURATION);
+    // --------- SHOP OWNER SETUP ---------
+    const setupShopOwnerUI = () => {
+      const transactionsCol = collection(db, `users/${userId}/transaction_log`);
+      const txQuery = query(transactionsCol, orderBy("timestamp", "asc"), limit(200));
+
+      onSnapshot(txQuery, (snapshot) => {
+        shopOwnerTransactionsContainer.innerHTML = "";
+        snapshot.forEach((d) => {
+          const t = d.data();
+          const el = document.createElement("div");
+          el.classList.add("p-3", "rounded-lg", "shadow-sm", "flex", "flex-col", "border", "border-gray-200", "dark:border-gray-600", "bg-green-100", "dark:bg-green-800");
+
+          const a = document.createElement("div"); a.classList.add("font-semibold", "text-sm", "text-green-800", "dark:text-green-200"); a.textContent = `Issued to: ${(t.recipient_id||"").substring(0,8)}...`;
+          const b = document.createElement("div"); b.classList.add("font-bold", "text-lg", "text-green-800", "dark:text-green-200"); b.textContent = `${t.amount} TK`;
+          const c = document.createElement("div"); c.classList.add("text-xs", "text-gray-500", "dark:text-gray-400", "mt-1"); c.textContent = `Time: ${safeToDateTime(t.timestamp)}`;
+
+          el.appendChild(a); el.appendChild(b); el.appendChild(c);
+          shopOwnerTransactionsContainer.appendChild(el);
+          shopOwnerTransactionsContainer.scrollTop = shopOwnerTransactionsContainer.scrollHeight;
+        });
+      });
+
+      issueTongkaBtn.addEventListener("click", async () => {
+        const recipientId = issueRecipientIdInput.value.trim();
+        const amount = parseFloat(issueAmountInput.value);
+        if (!recipientId || isNaN(amount) || amount <= 0) {
+          issueMessage.textContent = "Please enter a valid customer ID and amount.";
+          issueMessage.classList.remove("hidden");
+          return;
+        }
+        if (recipientId === userId) {
+          issueMessage.textContent = "You cannot issue to yourself.";
+          issueMessage.classList.remove("hidden");
+          return;
+        }
+
+        const recipientRef = doc(db, `users/${recipientId}`);
+        const shopOwnerLogCol = collection(db, `users/${userId}/transaction_log`);
+
+        try {
+          await runTransaction(db, async (trx) => {
+            const recipientSnap = await trx.get(recipientRef);
+            if (!recipientSnap.exists() || recipientSnap.data().role !== "customer") {
+              throw new Error("Recipient does not exist or is not a customer.");
             }
 
-            function endHold(completed = false) {
-                clearTimeout(holdTimer);
-                holdCircle.querySelector('circle').style.transition = 'none';
-                holdCircle.querySelector('circle').style.strokeDashoffset = circleCircumference;
-                holdText.textContent = 'Hold to Share';
-                if (!completed) {
-                    holdMessage.textContent = 'Hold released. Transaction canceled.';
-                    holdMessage.classList.remove('hidden');
-                } else {
-                    holdMessage.classList.add('hidden');
-                }
-            }
+            trx.update(recipientRef, { balance: (recipientSnap.data().balance ?? 0) + amount });
 
-            async function processTransaction(recipientId, amount) {
-                const senderId = userId;
-                const recipientRef = doc(db, `artifacts/${firebaseConfig.projectId}/users/${recipientId}`);
-
-                try {
-                    await runTransaction(db, async (transaction) => {
-                        const senderSnap = await transaction.get(doc(db, `artifacts/${firebaseConfig.projectId}/users/${senderId}`));
-                        const recipientSnap = await transaction.get(recipientRef);
-
-                        // Check sender balance
-                        const senderBalance = senderSnap.data().balance;
-                        if (senderBalance < amount) {
-                            displayError("Insufficient Tongka balance.");
-                            return Promise.reject("Insufficient funds.");
-                        }
-
-                        // Check recipient exists and is a customer
-                        if (!recipientSnap.exists() || recipientSnap.data().role !== 'customer') {
-                            displayError("Recipient does not exist or is not a customer.");
-                            return Promise.reject("Invalid recipient.");
-                        }
-
-                        // Update balances
-                        const newSenderBalance = senderBalance - amount;
-                        const newRecipientBalance = recipientSnap.data().balance + amount;
-                        transaction.update(doc(db, `artifacts/${firebaseConfig.projectId}/users/${senderId}`), { balance: newSenderBalance });
-                        transaction.update(recipientRef, { balance: newRecipientBalance });
-
-                        // Log transaction for sender (debit)
-                        const senderLogRef = doc(collection(db, `artifacts/${firebaseConfig.projectId}/users/${senderId}/transaction_log`));
-                        transaction.set(senderLogRef, {
-                            type: 'debit',
-                            amount: amount,
-                            recipient_id: recipientId,
-                            sender_id: senderId,
-                            timestamp: serverTimestamp()
-                        });
-
-                        // Log transaction for recipient (credit)
-                        const recipientLogRef = doc(collection(db, `artifacts/${firebaseConfig.projectId}/users/${recipientId}/transaction_log`));
-                        transaction.set(recipientLogRef, {
-                            type: 'credit',
-                            amount: amount,
-                            recipient_id: recipientId,
-                            sender_id: senderId,
-                            timestamp: serverTimestamp()
-                        });
-
-                        // Clear inputs
-                        recipientIdInput.value = '';
-                        transactionAmountInput.value = '';
-
-                        holdMessage.textContent = 'Transaction completed!';
-                        holdMessage.classList.remove('hidden');
-                        setTimeout(() => holdMessage.classList.add('hidden'), 3000);
-                    });
-                } catch (error) {
-                    console.error("Transaction failed: ", error);
-                    displayError(error.message || "Transaction failed. Please try again.");
-                }
-            }
-
-            // Update balance in real-time
-            onSnapshot(doc(db, `artifacts/${firebaseConfig.projectId}/users/${userId}`), (docSnap) => {
-                if (docSnap.exists() && docSnap.data().role === 'customer') {
-                    tongkaBalance.textContent = docSnap.data().balance;
-                }
-            });
-        };
-
-        // Function to setup Shop Owner UI
-        const setupShopOwnerUI = () => {
-            issueTongkaBtn.addEventListener('click', async () => {
-                const recipientId = issueRecipientIdInput.value.trim();
-                const amount = parseFloat(issueAmountInput.value);
-
-                if (!recipientId || isNaN(amount) || amount <= 0) {
-                    issueMessage.textContent = "Please enter a valid customer ID and amount.";
-                    issueMessage.classList.remove('hidden');
-                    return;
-                }
-
-                const recipientRef = doc(db, `artifacts/${firebaseConfig.projectId}/users/${recipientId}`);
-
-                try {
-                    await runTransaction(db, async (transaction) => {
-                        const recipientSnap = await transaction.get(recipientRef);
-
-                        // Check if recipient exists and is a customer
-                        if (!recipientSnap.exists() || recipientSnap.data().role !== 'customer') {
-                            issueMessage.textContent = "Recipient does not exist or is not a customer.";
-                            issueMessage.classList.remove('hidden');
-                            return Promise.reject("Invalid recipient.");
-                        }
-
-                        // Update customer's balance
-                        const newRecipientBalance = recipientSnap.data().balance + amount;
-                        transaction.update(recipientRef, { balance: newRecipientBalance });
-
-                        // Log transaction for the shop owner
-                        const shopOwnerLogRef = doc(collection(db, `artifacts/${firebaseConfig.projectId}/users/${userId}/transaction_log`));
-                        transaction.set(shopOwnerLogRef, {
-                            type: 'issued',
-                            amount: amount,
-                            recipient_id: recipientId,
-                            sender_id: userId,
-                            timestamp: serverTimestamp()
-                        });
-                        
-                        // Log transaction for the customer (credit)
-                        const recipientLogRef = doc(collection(db, `artifacts/${firebaseConfig.projectId}/users/${recipientId}/transaction_log`));
-                        transaction.set(recipientLogRef, {
-                            type: 'credit',
-                            amount: amount,
-                            recipient_id: recipientId,
-                            sender_id: userId,
-                            timestamp: serverTimestamp()
-                        });
-
-                        issueMessage.textContent = "Tongka issued successfully!";
-                        issueMessage.classList.remove('hidden');
-                        setTimeout(() => issueMessage.classList.add('hidden'), 3000);
-                        issueRecipientIdInput.value = '';
-                        issueAmountInput.value = '';
-                    });
-                } catch (error) {
-                    console.error("Issue transaction failed: ", error);
-                    issueMessage.textContent = error.message || "Failed to issue Tongka. Please try again.";
-                    issueMessage.classList.remove('hidden');
-                }
+            const ownerLogRef = doc(shopOwnerLogCol);
+            trx.set(ownerLogRef, {
+              type: "issued",
+              amount,
+              recipient_id: recipientId,
+              sender_id: userId,
+              timestamp: serverTimestamp(),
             });
 
-            const transactionsCol = collection(db, `artifacts/${firebaseConfig.projectId}/users/${userId}/transaction_log`);
-            onSnapshot(query(transactionsCol), async (snapshot) => {
-                shopOwnerTransactionsContainer.innerHTML = '';
-                const transactions = snapshot.docs.map(doc => doc.data());
-                transactions.sort((a, b) => (a.timestamp ? a.timestamp.toDate() : 0) - (b.timestamp ? b.timestamp.toDate() : 0));
-
-                for (const docData of transactions) {
-                    const transactionElement = document.createElement('div');
-                    transactionElement.classList.add('p-3', 'rounded-lg', 'shadow-sm', 'flex', 'flex-col', 'border', 'border-gray-200', 'dark:border-gray-600');
-                    transactionElement.classList.add('bg-green-100', 'dark:bg-green-800');
-                    
-                    const senderElement = document.createElement('div');
-                    senderElement.classList.add('font-semibold', 'text-sm', 'text-green-800', 'dark:text-green-200');
-                    senderElement.textContent = `Issued to: ${docData.recipient_id.substring(0, 8)}...`;
-                    
-                    const amountElement = document.createElement('div');
-                    amountElement.classList.add('font-bold', 'text-lg', 'text-green-800', 'dark:text-green-200');
-                    amountElement.textContent = `${docData.amount} TK`;
-
-                    const timeElement = document.createElement('div');
-                    timeElement.classList.add('text-xs', 'text-gray-500', 'dark:text-gray-400', 'mt-1');
-                    const date = docData.timestamp ? docData.timestamp.toDate().toLocaleString() : 'N/A';
-                    timeElement.textContent = `Time: ${date}`;
-
-                    transactionElement.appendChild(senderElement);
-                    transactionElement.appendChild(amountElement);
-                    transactionElement.appendChild(timeElement);
-                    shopOwnerTransactionsContainer.appendChild(transactionElement);
-                    shopOwnerTransactionsContainer.scrollTop = shopOwnerTransactionsContainer.scrollHeight;
-                }
+            const recipientLogRef = doc(collection(db, `users/${recipientId}/transaction_log`));
+            trx.set(recipientLogRef, {
+              type: "credit",
+              amount,
+              recipient_id: recipientId,
+              sender_id: userId,
+              timestamp: serverTimestamp(),
             });
-        };
-    </script>
+          });
+
+          issueMessage.textContent = "Tongka issued successfully!";
+          issueMessage.classList.remove("hidden");
+          setTimeout(() => issueMessage.classList.add("hidden"), 3000);
+          issueRecipientIdInput.value = "";
+          issueAmountInput.value = "";
+        } catch (err) {
+          console.error("Issue failed:", err);
+          issueMessage.textContent = err.message || "Failed to issue Tongka. Please try again.";
+          issueMessage.classList.remove("hidden");
+        }
+      });
+    };
+  </script>
 </body>
 </html>

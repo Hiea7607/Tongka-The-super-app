@@ -137,7 +137,7 @@
                 <div id="shop-owner-ui" class="hidden h-full flex flex-col">
                     <!-- Shop Owner UI -->
                     <h2 class="text-xl font-semibold mb-2 text-center text-gray-800 dark:text-gray-200">Issue Tongka</h2>
-                    <div class="mb-4 border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-500 dark:bg-gray-700">
+                    <div class="mb-4 border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-700">
                         <div class="mb-2">
                             <label for="issue-recipient-id" class="block text-sm font-medium mb-1">Customer User ID</label>
                             <input type="text" id="issue-recipient-id" placeholder="Enter Customer User ID" class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-900 transition-all duration-300">
@@ -173,7 +173,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp, query, where, doc, getDoc, setDoc, updateDoc, runTransaction } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
-        import { getAuth, signInWithCustomToken, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js";
         
         // This is the firebaseConfig object you provided.
         const firebaseConfig = {
@@ -512,8 +512,8 @@
                         transaction.update(recipientRef, { balance: newRecipientBalance });
 
                         // Log transaction for sender (debit)
-                        const senderLogRef = collection(db, `artifacts/${firebaseConfig.projectId}/users/${senderId}/transaction_log`);
-                        transaction.set(doc(senderLogRef), {
+                        const senderLogRef = doc(collection(db, `artifacts/${firebaseConfig.projectId}/users/${senderId}/transaction_log`));
+                        transaction.set(senderLogRef, {
                             type: 'debit',
                             amount: amount,
                             recipient_id: recipientId,
@@ -522,8 +522,8 @@
                         });
 
                         // Log transaction for recipient (credit)
-                        const recipientLogRef = collection(db, `artifacts/${firebaseConfig.projectId}/users/${recipientId}/transaction_log`);
-                        transaction.set(doc(recipientLogRef), {
+                        const recipientLogRef = doc(collection(db, `artifacts/${firebaseConfig.projectId}/users/${recipientId}/transaction_log`));
+                        transaction.set(recipientLogRef, {
                             type: 'credit',
                             amount: amount,
                             recipient_id: recipientId,
@@ -583,8 +583,8 @@
                         transaction.update(recipientRef, { balance: newRecipientBalance });
 
                         // Log transaction for the shop owner
-                        const shopOwnerLogRef = collection(db, `artifacts/${firebaseConfig.projectId}/users/${userId}/transaction_log`);
-                        transaction.set(doc(shopOwnerLogRef), {
+                        const shopOwnerLogRef = doc(collection(db, `artifacts/${firebaseConfig.projectId}/users/${userId}/transaction_log`));
+                        transaction.set(shopOwnerLogRef, {
                             type: 'issued',
                             amount: amount,
                             recipient_id: recipientId,
@@ -593,8 +593,8 @@
                         });
                         
                         // Log transaction for the customer (credit)
-                        const recipientLogRef = collection(db, `artifacts/${firebaseConfig.projectId}/users/${recipientId}/transaction_log`);
-                        transaction.set(doc(recipientLogRef), {
+                        const recipientLogRef = doc(collection(db, `artifacts/${firebaseConfig.projectId}/users/${recipientId}/transaction_log`));
+                        transaction.set(recipientLogRef, {
                             type: 'credit',
                             amount: amount,
                             recipient_id: recipientId,
